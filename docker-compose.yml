@@ -1,7 +1,7 @@
 version: "3"
 
 services:
-  db_xia_coursera:
+  db_xia:
     image: mysql:5.7
     ports:
       - '3306:3306'
@@ -13,13 +13,14 @@ services:
     networks:
       - openlxp
 
-  app_xia_coursera:
-    build:
-      context: .
+  app_xia_edx:
+    image: registry1.dso.mil/ironbank/adl-ousd/ecc-openlxp/ecc-openlxp-xia-edx:1.0.0
+#    build:
+#      context: .
     ports:
       - "8000:8020"
     command: >
-      sh -c ". /opt/app/start-app.sh"
+      sh -c ". /tmp/app/start-app.sh"
     environment:
       DB_NAME: "${DB_NAME}"
       DB_USER: "${DB_USER}"
@@ -38,9 +39,9 @@ services:
       CELERY_BROKER_URL: "${CELERY_BROKER_URL}"
       CELERY_RESULT_BACKEND: "${CELERY_RESULT_BACKEND}"
     volumes:
-      - ./app:/opt/app/openlxp-xia-coursera
+      - ./app:/tmp/app/openlxp-xia-edx
     depends_on:
-      - db_xia_coursera
+      - db_xia
     networks:
       - openlxp
 
@@ -52,18 +53,18 @@ services:
   celery:
     build:
       context: .
-    command: celery -A openlxp_xia_coursera_project worker -l info --pool=solo
+    command: celery -A openlxp_xia_edx_project worker -l info --pool=solo
     volumes:
-      - ./app:/opt/app/openlxp-xia-coursera
+      - ./app:/tmp/app/openlxp-xia-edx
     environment:
       REQUESTS_CA_BUNDLE: '/etc/ssl/certs/ca-certificates.pem'
       AWS_CA_BUNDLE: '/etc/ssl/certs/ca-certificates.pem'
     env_file:
       - ./.env
     depends_on:
-      - db_xia_coursera
+      - db_xia
       - redis
-      - app_xia_coursera
+      - app_xia_edx
     networks:
       - openlxp
     restart: on-failure
@@ -71,18 +72,18 @@ services:
   celery-beat:
     build:
       context: .
-    command: celery -A openlxp_xia_coursera_project beat --scheduler django_celery_beat.schedulers:DatabaseScheduler --loglevel=info --pidfile=/tmp/celerybeat.pid
+    command: celery -A openlxp_xia_edx_project beat --scheduler django_celery_beat.schedulers:DatabaseScheduler --loglevel=info --pidfile=/tmp/celerybeat.pid
     volumes:
-      - ./app:/opt/app/openlxp-xia-coursera
+      - ./app:/tmp/app/openlxp-xia-edx
     environment:
       REQUESTS_CA_BUNDLE: '/etc/ssl/certs/ca-certificates.pem'
       AWS_CA_BUNDLE: '/etc/ssl/certs/ca-certificates.pem'
     env_file:
       - ./.env
     depends_on:
-      - db_xia_coursera
+      - db_xia
       - redis
-      - app_xia_coursera
+      - app_xia_edx
     networks:
       - openlxp
     restart: on-failure
