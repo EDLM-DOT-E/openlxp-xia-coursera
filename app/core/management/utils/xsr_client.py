@@ -14,18 +14,18 @@ def read_source_file():
     """setting file path from s3 bucket"""
     xsr_data = XSRConfiguration.objects.first()
     file_name = xsr_data.source_file
+
+    # TODO: Eventually we want to be able to do all sheets at once in extraction
     extracted_data = pd.read_excel(file_name,
                                     sheet_name="8 Test",
                                     engine='openpyxl')
-    # extracted_data2 = pd.read_excel(file_name,
-    #                                 sheet_name="Projects", engine='openpyxl',
-    #                                 skiprows=range(1, 3), header=1)
-    # extracted_data = pd.concat([extracted_data1, extracted_data2],
-    #                            ignore_index=True)
 
     std_source_df = extracted_data.where(pd.notnull(extracted_data),
                                          None)
     source_nan_df = std_source_df.replace(np.nan, None)
+
+    # Strip leading or trialing whitespcae for every column 
+    source_nan_df.columns = source_nan_df.columns.map(str.strip)
 
     # Strip leading or trailing whitespace for every string element
     for i in source_nan_df.columns:
@@ -47,19 +47,6 @@ def read_source_file():
 
 def get_source_metadata_key_value(data_dict):
     """Function to create key value for source metadata """
-    # field names depend on source data and SOURCESYSTEM is system generated
-    # field = ['Course Provider', 'Course ID']
-    # field_values = []
-
-    # for item in field:
-    #     if not data_dict.get(item):
-    #         logger.info('Field name ' + item + ' is missing for '
-    #                                            'key creation')
-    #         return None
-    #     field_values.append(data_dict.get(item))
-
-    # Key value creation for source metadata
-    # key_value = '_'.join(field_values)
 
     key_value = data_dict['Course Provider'].replace(' ','_') + '-' + str(data_dict['Course ID']).replace(' ','_') + '-DOTE-000'
 
